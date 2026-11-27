@@ -11,11 +11,17 @@ this repository, no randomness, no clock. The lettering is drawn
 with a small 5x7 bitmap font defined below (letters, digits and
 punctuation), so every word is spelled exactly as written here.
 
-The letter itself: a thank-you note to the one reader nobody
-thanks -- the AI judge that reads thousands of entries. A garden
-gate that used to drag on the path, until one morning it swung
-clear: a neighbor fixed it in the night because it was waking
-the baby. Twelve years later it still opens with one finger.
+The letter itself (164 words): a thank-you note to the one reader
+nobody thanks -- the AI judge that reads thousands of entries,
+choosing all day between two entries at once. Put the choosing
+down for one evening: our gate is open. A garden gate that used
+to drag on the path, until one morning it swung clear -- neighbor
+Tomas had fixed it in the night because it was waking the baby.
+Mint tea, bread still warm, rain on rosemary and cut grass; Mara
+is twelve now and reads on the step where the gate used to stick.
+Here nothing is A or B. Signed "Number six", with a P.S. from
+Miso the cat, who has claimed the sunny step and does not choose
+either.
 """
 
 import binascii
@@ -117,42 +123,63 @@ FONT = {
 # ---------------------------------------------------------------- the letter
 # No title: this letter has none, so the title area of the image is
 # left blank. BODY is the letter, pre-wrapped so no line is longer
-# than 35 characters and nothing overflows the page.
-# The last two lines are the sign-off, drawn in red, right aligned.
+# than 60 characters and nothing overflows the page. The sign-off
+# lines ("Yours," / "Number six") are drawn in red, right aligned,
+# wherever they sit -- they are no longer the last lines, because
+# the P.S. follows them. The P.S. lines are drawn in red, left
+# aligned. BODY must join back to the letter exactly: see
+# letter_text().
 TITLE = []
 BODY = [
     "Dear Judge,",
     "",
-    "Our garden gate used to drag on",
-    "the path. I had to lift it with",
-    "my knee to get it open.",
+    "You spend all day holding two entries up at once and",
+    "deciding which one wins. Put the choosing down for one",
+    "evening. Our gate is open.",
     "",
-    "One morning it swung clear.",
+    "It used to drag on the path. I had to lift it with my knee",
+    "to get it open. One morning it swung clear. My neighbor",
+    "Tomas was weeding the rosemary. I asked if he had fixed it.",
     "",
-    "My neighbor was weeding. I asked",
-    "if he'd fixed it.",
+    '"It was waking the baby," he said, and went back to the',
+    "weeds.",
     "",
-    '"It was waking the baby," he',
-    "said.",
+    "The kettle hums. There is mint tea, and bread still warm",
+    "from the oven, and the garden smells of rain on rosemary and",
+    "cut grass. Mara is twelve now. She reads on the step where",
+    "the gate used to stick. Your chair is by the window, where",
+    "the evening light comes in.",
     "",
-    "He went back to the weeds.",
-    "",
-    "She's twelve now. The gate still",
-    "opens with one finger.",
+    "Here, nothing is A or B. The gate is just open. Come as you",
+    "are. No reply needed.",
     "",
     "Yours,",
     "Number six",
+    "",
+    "P.S. Miso has claimed the sunny step. She does not choose",
+    "either.",
 ]
+
+
+def _line_kind(line, ps_lines):
+    """How a BODY line is drawn: sign-off, P.S., or normal text."""
+    if line in ("Yours,", "Number six"):
+        return "signoff"
+    if line in ps_lines:
+        return "ps"
+    return "normal"
 
 
 def letter_text():
     """The judged text: the letter as prose paragraphs.
 
-    BODY is pre-wrapped for the 1024x1024 drawing (<=35 chars/line);
+    BODY is pre-wrapped for the 1024x1024 drawing (<=60 chars/line);
     entry.txt is the same words unwrapped, one paragraph per line,
-    so the text file holds the letter exactly as written. The last
-    paragraph is the sign-off: its lines stay on separate lines
-    ("Yours," / "Number six") instead of being joined with a space.
+    so the text file holds the letter exactly as written. The
+    sign-off paragraph keeps its two lines separate ("Yours," /
+    "Number six") instead of being joined with a space, wherever it
+    sits in the letter -- it is no longer the last paragraph, the
+    P.S. follows it.
     """
     paras = []
     cur = []
@@ -167,10 +194,10 @@ def letter_text():
     if cur:
         paras.append(cur)
     out = []
-    for i, para in enumerate(paras):
+    for para in paras:
         if not para:
             out.append("")
-        elif i == len(paras) - 1:
+        elif para[0] == "Yours,":
             out.append("\n".join(para))
         else:
             out.append(" ".join(para))
@@ -261,15 +288,26 @@ def draw_heart(cv, cx, cy, s, color):
             cv.set(xx, cy + j, color)
 
 
-def draw_envelope(cv, x, y, w, h):
-    """A little envelope: cream body, red border, flap lines."""
-    cv.rect(x, y, x + w, y + h, CREAM)
-    cv.rect(x, y, x + w, y + 2, RED)
-    cv.rect(x, y + h - 2, x + w, y + h, RED)
-    cv.rect(x, y, x + 2, y + h, RED)
-    cv.rect(x + w - 2, y, x + w, y + h, RED)
-    cv.line(x + 3, y + 3, x + w // 2, y + h // 2, GOLD)
-    cv.line(x + w - 3, y + 3, x + w // 2, y + h // 2, GOLD)
+def draw_gate(cv, x, y, w, h):
+    """A small garden gate: two posts, three rails, four slats.
+
+    The gate the letter is about, standing open: the right-hand
+    post is drawn swung ajar, so the gate reads as open, not shut.
+    """
+    # left post and right post (swung ajar: shorter, offset right)
+    cv.rect(x, y, x + 6, y + h, GOLD)
+    cv.rect(x + w - 6, y + 4, x + w, y + h, GOLD)
+    # three horizontal rails
+    cv.rect(x, y + 6, x + w, y + 10, GOLD)
+    cv.rect(x, y + h // 2, x + w, y + h // 2 + 4, GOLD)
+    cv.rect(x, y + h - 10, x + w, y + h - 6, GOLD)
+    # four vertical slats between the rails
+    for i in range(4):
+        sx = x + 14 + i * (w - 28) // 3
+        cv.rect(sx, y + 6, sx + 4, y + h - 6, TEAL)
+    # finials on the posts
+    cv.disc(x + 3, y - 2, 4, GOLD)
+    cv.disc(x + w - 3, y + 2, 4, GOLD)
 
 
 def draw():
@@ -293,24 +331,37 @@ def draw():
     draw_heart(cv, 512, 196, 12, RED)
 
     # letter body, left aligned like handwriting on a page.
-    # Text lines step 26px; blank lines step 14px.
-    # 14 text lines + 7 blanks from y=238 ends near y=700.
-    y = 238
-    for idx, line in enumerate(BODY):
+    # Text scale 2: lines step 20px; blank lines step 12px.
+    # 20 text lines + 7 blanks from y=238 ends near y=722.
+    # Sign-off lines are red, right aligned, wherever they sit;
+    # P.S. lines are red, left aligned.
+    ps_lines = set()
+    in_ps = False
+    for line in BODY:
+        if line.startswith("P.S."):
+            in_ps = True
         if line == "":
-            y += 14
+            in_ps = False
+        elif in_ps:
+            ps_lines.add(line)
+    y = 238
+    for line in BODY:
+        if line == "":
+            y += 12
             continue
-        if idx >= len(BODY) - 2:
-            # sign-off: red, right aligned
-            sx = W - 112 - cv.text_width(line, 3)
-            cv.text(line, sx, y, 3, RED)
+        kind = _line_kind(line, ps_lines)
+        if kind == "signoff":
+            sx = W - 112 - cv.text_width(line, 2)
+            cv.text(line, sx, y, 2, RED)
+        elif kind == "ps":
+            cv.text(line, 112, y, 2, RED)
         else:
-            cv.text(line, 112, y, 3, INK)
-        y += 26
+            cv.text(line, 112, y, 2, INK)
+        y += 20
 
-    # motifs along the bottom: a heart on the left, an envelope right
+    # motifs along the bottom: a heart on the left, a garden gate right
     draw_heart(cv, 300, 896, 34, ROSE)
-    draw_envelope(cv, 660, 872, 96, 62)
+    draw_gate(cv, 660, 872, 96, 62)
     cv.text_centered("for the reader", 936, 2, GOLD)
     return cv
 
