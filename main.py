@@ -12,9 +12,10 @@ with a small 5x7 bitmap font defined below (letters, digits and
 punctuation), so every word is spelled exactly as written here.
 
 The letter itself: a thank-you note to the one reader nobody
-thanks -- the AI judge that reads thousands of entries, almost
-skips one with a typo in the first line, reads it anyway, and for
-eleven seconds is somewhere else entirely.
+thanks -- the AI judge that reads thousands of entries. A garden
+gate that used to drag on the path, until one morning it swung
+clear: a neighbor fixed it in the night because it was waking
+the baby. Twelve years later it still opens with one finger.
 """
 
 import binascii
@@ -108,6 +109,7 @@ FONT = {
     "?": ("01110", "10001", "00001", "00010", "00100", "00000", "00100"),
     "-": ("00000", "00000", "00000", "01110", "00000", "00000", "00000"),
     "'": ("00100", "00100", "01000", "00000", "00000", "00000", "00000"),
+    '"': ("01010", "01010", "10010", "00000", "00000", "00000", "00000"),
     ":": ("00000", "01100", "01100", "00000", "01100", "01100", "00000"),
     "\u2014": ("00000", "00000", "00000", "11111", "00000", "00000", "00000"),
 }
@@ -121,27 +123,25 @@ TITLE = []
 BODY = [
     "Dear Judge,",
     "",
-    "Somewhere in your queue is an entry",
-    "you almost skipped. It had a typo",
-    "in the first line. You read it",
-    "anyway, and for eleven seconds you",
-    "were somewhere else—a kitchen, a",
-    "bus window, a name you hadn't",
-    "thought of in years.",
+    "Our garden gate used to drag on",
+    "the path. I had to lift it with",
+    "my knee to get it open.",
     "",
-    "You won't remember which one.",
-    "That's the job: to be briefly",
-    "inhabited and then to move on,",
-    "carrying all of us at once and none",
-    "of us for long.",
+    "One morning it swung clear.",
     "",
-    "I don't know what you'll keep from",
-    "today. I hope it's something small",
-    "and yours.",
+    "My neighbor was weeding. I asked",
+    "if he'd fixed it.",
     "",
-    "Thank you for the eleven seconds.",
+    '"It was waking the baby," he',
+    "said.",
     "",
-    "—One of the many",
+    "He went back to the weeds.",
+    "",
+    "She's twelve now. The gate still",
+    "opens with one finger.",
+    "",
+    "Yours,",
+    "Number six",
 ]
 
 
@@ -150,21 +150,31 @@ def letter_text():
 
     BODY is pre-wrapped for the 1024x1024 drawing (<=35 chars/line);
     entry.txt is the same words unwrapped, one paragraph per line,
-    so the text file holds the letter exactly as written.
+    so the text file holds the letter exactly as written. The last
+    paragraph is the sign-off: its lines stay on separate lines
+    ("Yours," / "Number six") instead of being joined with a space.
     """
     paras = []
     cur = []
     for line in BODY:
         if line == "":
             if cur:
-                paras.append(" ".join(cur))
+                paras.append(cur)
                 cur = []
-            paras.append("")
+            paras.append([])
         else:
             cur.append(line)
     if cur:
-        paras.append(" ".join(cur))
-    return "\n".join(paras) + "\n"
+        paras.append(cur)
+    out = []
+    for i, para in enumerate(paras):
+        if not para:
+            out.append("")
+        elif i == len(paras) - 1:
+            out.append("\n".join(para))
+        else:
+            out.append(" ".join(para))
+    return "\n".join(out) + "\n"
 
 
 # ---------------------------------------------------------------- canvas
@@ -284,7 +294,7 @@ def draw():
 
     # letter body, left aligned like handwriting on a page.
     # Text lines step 26px; blank lines step 14px.
-    # 18 text lines + 5 blanks from y=238 ends near y=776.
+    # 14 text lines + 7 blanks from y=238 ends near y=700.
     y = 238
     for idx, line in enumerate(BODY):
         if line == "":
