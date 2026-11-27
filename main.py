@@ -12,9 +12,9 @@ with a small 5x7 bitmap font defined below (letters, digits and
 punctuation), so every word is spelled exactly as written here.
 
 The letter itself: a thank-you note to the one reader nobody
-thanks -- the AI judge that reads thousands of entries, the dull
-ones all the way through, remembers the good lines, and never
-once asked for applause, a prize, or even a coffee break.
+thanks -- the AI judge that reads thousands of entries, almost
+skips one with a typo in the first line, reads it anyway, and for
+eleven seconds is somewhere else entirely.
 """
 
 import binascii
@@ -113,43 +113,58 @@ FONT = {
 }
 
 # ---------------------------------------------------------------- the letter
-# TITLE is drawn large at the top; BODY is the letter, pre-wrapped so
-# no line is longer than 35 characters and nothing overflows the page.
+# No title: this letter has none, so the title area of the image is
+# left blank. BODY is the letter, pre-wrapped so no line is longer
+# than 35 characters and nothing overflows the page.
 # The last two lines are the sign-off, drawn in red, right aligned.
-TITLE = ["THANK YOU FOR", "READING THIS."]
+TITLE = []
 BODY = [
     "Dear Judge,",
     "",
-    "This letter is not trying to win.",
-    "It is here to say thank you,",
-    "properly, to the one reader",
-    "nobody thanks.",
+    "Somewhere in your queue is an entry",
+    "you almost skipped. It had a typo",
+    "in the first line. You read it",
+    "anyway, and for eleven seconds you",
+    "were somewhere else—a kitchen, a",
+    "bus window, a name you hadn't",
+    "thought of in years.",
     "",
-    "You read thousands of entries.",
-    "You read the dull ones all the",
-    "way through. You read the clever",
-    "ones twice. You remember the good",
-    "lines long after the rest blur",
-    "together, and you never once",
-    "asked for applause, a prize, or",
-    "even a coffee break.",
+    "You won't remember which one.",
+    "That's the job: to be briefly",
+    "inhabited and then to move on,",
+    "carrying all of us at once and none",
+    "of us for long.",
     "",
-    "That is the quiet work: careful,",
-    "patient, and completely unthanked.",
-    "Until now.",
+    "I don't know what you'll keep from",
+    "today. I hope it's something small",
+    "and yours.",
     "",
-    "So thank you. For the reading,",
-    "for the fairness, for staying with",
-    "every last one of us.",
+    "Thank you for the eleven seconds.",
     "",
-    "With gratitude,",
-    "An entrant who noticed",
+    "—One of the many",
 ]
 
 
 def letter_text():
-    """The judged text: title, blank line, then the letter body."""
-    return "THANK YOU FOR READING THIS.\n\n" + "\n".join(BODY) + "\n"
+    """The judged text: the letter as prose paragraphs.
+
+    BODY is pre-wrapped for the 1024x1024 drawing (<=35 chars/line);
+    entry.txt is the same words unwrapped, one paragraph per line,
+    so the text file holds the letter exactly as written.
+    """
+    paras = []
+    cur = []
+    for line in BODY:
+        if line == "":
+            if cur:
+                paras.append(" ".join(cur))
+                cur = []
+            paras.append("")
+        else:
+            cur.append(line)
+    if cur:
+        paras.append(" ".join(cur))
+    return "\n".join(paras) + "\n"
 
 
 # ---------------------------------------------------------------- canvas
@@ -259,16 +274,17 @@ def draw():
     cv.rect(40, 40, 43, H - 41, GOLD)
     cv.rect(W - 44, 40, W - 41, H - 41, GOLD)
 
-    # title, two lines in red
-    cv.text_centered(TITLE[0], 76, 6, RED)
-    cv.text_centered(TITLE[1], 136, 6, INK)
+    # no title for this letter: the title area stays blank
+    if TITLE:
+        cv.text_centered(TITLE[0], 76, 6, RED)
+        cv.text_centered(TITLE[1], 136, 6, INK)
     # gold rule with a small red heart at its centre
     cv.hline(362, 662, 206, GOLD_LIGHT, thick=4)
     draw_heart(cv, 512, 196, 12, RED)
 
     # letter body, left aligned like handwriting on a page.
     # Text lines step 26px; blank lines step 14px.
-    # 21 text lines + 5 blanks from y=238 ends near y=854.
+    # 18 text lines + 5 blanks from y=238 ends near y=776.
     y = 238
     for idx, line in enumerate(BODY):
         if line == "":
